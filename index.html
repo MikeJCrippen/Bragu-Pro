@@ -25,19 +25,14 @@
       
       .bg-glow {
         position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        top: 0; left: 0; right: 0; bottom: 0;
         z-index: -1;
         overflow: hidden;
       }
       .glow-1 {
         position: absolute;
-        width: 150vw;
-        height: 150vw;
-        top: -50vw;
-        left: -50vw;
+        width: 150vw; height: 150vw;
+        top: -50vw; left: -50vw;
         background: radial-gradient(circle, rgba(217, 119, 6, 0.08) 0%, rgba(5, 5, 5, 0) 70%);
         pointer-events: none;
       }
@@ -66,51 +61,91 @@
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
       }
-
-      ::-webkit-scrollbar { width: 4px; }
-      ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-      
-      input::-webkit-outer-spin-button,
-      input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
     </style>
-    <script type="importmap">
+  <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.4",
-    "react-dom": "https://esm.sh/react-dom@^19.2.4",
-    "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
   }
 }
 </script>
-    <!-- This script handles the on-the-fly transpilation of your .tsx files -->
-    <script type="module">
-      import { transform } from 'https://esm.sh/@babel/standalone';
-      
-      async function loadTSX(url) {
-        const response = await fetch(url);
-        const code = await response.text();
-        const transformed = transform(code, {
-          presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
-          filename: url
-        }).code;
-        
-        const blob = new Blob([transformed], { type: 'application/javascript' });
-        return URL.createObjectURL(blob);
-      }
-
-      // Bootstrap the app
-      const indexUrl = await loadTSX('./index.tsx');
-      import(indexUrl);
-    </script>
-  </head>
+</head>
   <body class="overflow-x-hidden">
     <div class="bg-glow"><div class="glow-1"></div></div>
-    <div id="root"></div>
+    <div id="root">
+      <div class="flex items-center justify-center min-h-screen">
+        <div class="text-center space-y-4">
+          <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p class="text-stone-500 font-bold tracking-widest text-[10px] uppercase">Calibrating Portafilter...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Babel for on-the-fly transpilation -->
+    <script src="https://esm.sh/@babel/standalone"></script>
+    
+    <script type="module">
+      const { transform } = Babel;
+      
+      // List all local files that need to be transpiled
+      const files = [
+        { id: './types', url: './types.ts' },
+        { id: './App', url: './App.tsx' },
+        { id: 'index', url: './index.tsx' }
+      ];
+
+      async function bootstrap() {
+        try {
+          const transpiledFiles = {};
+
+          // 1. Fetch and transpile all files
+          for (const file of files) {
+            const response = await fetch(file.url);
+            if (!response.ok) throw new Error(`Could not find ${file.url}`);
+            const code = await response.text();
+            
+            const transformed = transform(code, {
+              presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
+              filename: file.url
+            }).code;
+            
+            const blob = new Blob([transformed], { type: 'application/javascript' });
+            transpiledFiles[file.id] = URL.createObjectURL(blob);
+          }
+
+          // 2. Create the Import Map dynamically
+          const im = document.createElement('script');
+          im.type = 'importmap';
+          im.textContent = JSON.stringify({
+            imports: {
+              "react": "https://esm.sh/react@^19.2.4",
+              "react-dom": "https://esm.sh/react-dom@^19.2.4",
+              "react-dom/client": "https://esm.sh/react-dom@^19.2.4/client",
+              "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+              "./App": transpiledFiles['./App'],
+              "./types": transpiledFiles['./types']
+            }
+          });
+          document.head.appendChild(im);
+
+          // 3. Start the application
+          await import(transpiledFiles['index']);
+        } catch (err) {
+          console.error("BeanLog Bootstrap Failed:", err);
+          document.getElementById('root').innerHTML = `
+            <div class="p-10 text-center">
+              <h1 class="text-red-500 font-bold mb-4">Startup Error</h1>
+              <p class="text-stone-500 text-sm">${err.message}</p>
+              <p class="mt-4 text-[10px] text-stone-700">Check Pi terminal for 404s</p>
+            </div>
+          `;
+        }
+      }
+
+      bootstrap();
+    </script>
   </body>
 </html>
