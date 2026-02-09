@@ -74,10 +74,10 @@
   <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0"
+    "react": "https://esm.sh/react@^19.2.4"
   }
 }
 </script>
@@ -101,7 +101,15 @@
     <script type="module">
       const logEl = document.getElementById('debug-log');
       const stepEl = document.getElementById('debug-step');
-      const statusEl = document.getElementById('loading-status');
+
+      // 1. Service Worker Registration for PWA support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW Registered', reg))
+            .catch(err => console.log('SW Registration Failed', err));
+        });
+      }
       
       function log(msg, isError = false) {
         console.log(msg);
