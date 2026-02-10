@@ -226,7 +226,7 @@ const App: React.FC = () => {
 
   const BeanList = () => (
     <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
-      <header className="flex justify-between items-center mb-12 mt-12 px-2">
+      <header className="flex justify-between items-center mb-12 mt-2 px-2">
         <div className="flex-1 min-w-0 pr-6">
           <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Laboratory v0.2</span>
           <h1 className="text-4xl font-display text-white mt-1 leading-tight truncate">Collections</h1>
@@ -292,7 +292,7 @@ const App: React.FC = () => {
     const [formData, setFormData] = useState({ roaster: '', name: '', originType: 'Single Origin' as OriginType, roastType: 'Medium' as RoastType, tastingNotes: '' });
     return (
       <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
-        <header className="flex items-center justify-between mb-16 mt-12 px-2">
+        <header className="flex items-center justify-between mb-16 mt-2 px-2">
           <button onClick={() => setView({ type: 'bean-list' })} className="glass-card w-14 h-14 rounded-full flex items-center justify-center text-stone-500"><ChevronLeft size={28} /></button>
           <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Initialize Bag</h2>
           <div className="w-14" />
@@ -333,7 +333,7 @@ const App: React.FC = () => {
 
     return (
       <div className="min-h-[100dvh] pt-safe pb-safe bg-[#050505] fade-in flex flex-col">
-        <div className="p-8 space-y-4 mt-8 px-8">
+        <div className="p-8 space-y-4 mt-2 px-8">
           <button onClick={() => setView({ type: 'bean-list' })} className="glass-card p-4 rounded-3xl text-white inline-flex mb-4 transition-transform active:scale-95"><ChevronLeft size={24} /></button>
           <h1 className="text-6xl font-display text-white leading-tight tracking-tight">{bean.name}</h1>
           <p className="text-amber-500 font-black tracking-[0.3em] text-xs uppercase">{bean.roaster}</p>
@@ -382,7 +382,7 @@ const App: React.FC = () => {
     const [fd, setFd] = useState({ beanId, dose: last?.dose || 18, yield: last?.yield || 36, time: last?.time || 30, grindSetting: last?.grindSetting || '', rating: 7, notes: '' });
     return (
       <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
-        <header className="flex items-center justify-between mb-16 mt-12 px-2">
+        <header className="flex items-center justify-between mb-16 mt-2 px-2">
           <button onClick={() => setView({ type: 'bean-details', beanId })} className="glass-card p-4 rounded-full transition-transform active:scale-90"><ChevronLeft size={28} /></button>
           <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Log Protocol</h2>
           <div className="w-14"/>
