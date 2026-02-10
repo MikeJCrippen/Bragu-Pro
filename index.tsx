@@ -131,7 +131,7 @@ const App: React.FC = () => {
           <h1 className="text-5xl font-display text-white mt-1">Collections</h1>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => setShowSettings(true)} className="btn-secondary w-14 h-14 rounded-full flex items-center justify-center text-stone-500 glass-card"><Database size={24} /></button>
+          <button onClick={() => setShowSettings(true)} className="w-14 h-14 rounded-full flex items-center justify-center text-stone-500 glass-card"><Database size={24} /></button>
           <button onClick={() => setView({ type: 'add-bean' })} className="btn-primary w-14 h-14 rounded-full flex items-center justify-center text-black"><Plus size={28} strokeWidth={3} /></button>
         </div>
       </header>
