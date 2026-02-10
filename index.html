@@ -52,10 +52,10 @@
   </head>
   <body>
     <div id="root">
-      <div class="flex items-center justify-center min-h-screen">
+      <div id="loader" class="flex items-center justify-center min-h-screen">
         <div class="text-center space-y-4">
-          <div class="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p class="text-stone-700 text-[10px] font-black tracking-widest uppercase">Grinding Beans...</p>
+          <div id="spinner" class="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p id="status-text" class="text-stone-700 text-[10px] font-black tracking-widest uppercase">Grinding Beans...</p>
         </div>
       </div>
     </div>
@@ -65,17 +65,24 @@
       // Robust Service Worker Registration
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Use URL constructor to ensure the path is absolute to the current origin
-          const swUrl = new URL('sw.js', window.location.href).href;
-          navigator.serviceWorker.register(swUrl)
-            .then(reg => console.log('ServiceWorker registered with scope:', reg.scope))
+          // Simple relative path is safer and avoids URL constructor origin errors
+          navigator.serviceWorker.register('./sw.js')
             .catch(err => {
-              // Only log errors if we're not in a known sandboxed/preview environment
               if (!window.location.hostname.includes('usercontent.goog')) {
-                console.error('ServiceWorker registration failed:', err);
+                console.warn('SW registration skipped or failed:', err);
               }
             });
         });
+      }
+
+      function showError(msg) {
+        const status = document.getElementById('status-text');
+        const spinner = document.getElementById('spinner');
+        if (spinner) spinner.style.display = 'none';
+        if (status) {
+          status.innerText = 'Error: ' + msg;
+          status.classList.replace('text-stone-700', 'text-red-500');
+        }
       }
 
       async function bootstrap() {
@@ -89,15 +96,20 @@
 
           for (const file of files) {
             const response = await fetch(file.url);
-            if (!response.ok) throw new Error(`Failed to fetch ${file.url}`);
+            if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${file.url}`);
             let code = await response.text();
             
+            // Map internal relative imports to blob URLs
             if (file.id === './App') code = code.replace(/from\s+['"]\.\/types['"]/g, `from '${transpiledFiles['./types']}'`);
             if (file.id === 'index') code = code.replace(/from\s+['"]\.\/App['"]/g, `from '${transpiledFiles['./App']}'`);
 
             const transformed = Babel.transform(code, {
-              presets: ['react', ['typescript', { isTSX: true, allExtensions: true }]],
-              filename: file.url
+              presets: [
+                ['react', { runtime: 'automatic' }],
+                ['typescript', { isTSX: true, allExtensions: true }]
+              ],
+              filename: file.url,
+              sourceMaps: "inline"
             }).code;
             
             const blob = new Blob([transformed], { type: 'application/javascript' });
@@ -106,6 +118,7 @@
           await import(transpiledFiles['index']);
         } catch (err) {
           console.error("Boot error:", err);
+          showError(err.message);
         }
       }
       bootstrap();
