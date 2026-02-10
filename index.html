@@ -52,56 +52,91 @@
   </head>
   <body>
     <div id="root">
-      <div id="loader" class="flex items-center justify-center min-h-screen">
-        <div class="text-center space-y-4">
+      <div id="loader" class="flex items-center justify-center min-h-screen p-6">
+        <div class="text-center space-y-6 max-w-xs w-full">
           <div id="spinner" class="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p id="status-text" class="text-stone-700 text-[10px] font-black tracking-widest uppercase">Grinding Beans...</p>
+          <div class="space-y-2">
+            <p id="status-text" class="text-stone-700 text-[10px] font-black tracking-widest uppercase">Grinding Beans...</p>
+            <p id="error-details" class="text-red-500/60 text-[10px] hidden break-all font-mono leading-tight"></p>
+          </div>
+          <button id="reset-btn" onclick="emergencyReset()" class="hidden w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-bold tracking-widest uppercase text-stone-500 hover:text-white transition-colors">
+            Clear Cache & Force Reload
+          </button>
         </div>
       </div>
     </div>
 
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script type="module">
-      // Robust Service Worker Registration
+      // 1. Service Worker Setup
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Simple relative path is safer and avoids URL constructor origin errors
-          navigator.serviceWorker.register('./sw.js')
-            .catch(err => {
-              if (!window.location.hostname.includes('usercontent.goog')) {
-                console.warn('SW registration skipped or failed:', err);
-              }
-            });
+          navigator.serviceWorker.register('sw.js').catch(() => {});
         });
       }
 
-      function showError(msg) {
+      // 2. Emergency Recovery Logic
+      window.emergencyReset = async () => {
+        const status = document.getElementById('status-text');
+        status.innerText = 'PURGING SYSTEM...';
+        
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let registration of registrations) { await registration.unregister(); }
+          const cacheKeys = await caches.keys();
+          for (let key of cacheKeys) { await caches.delete(key); }
+        } catch (e) {}
+        
+        window.location.reload(true);
+      };
+
+      function showError(msg, details = '') {
         const status = document.getElementById('status-text');
         const spinner = document.getElementById('spinner');
+        const detailEl = document.getElementById('error-details');
+        const resetBtn = document.getElementById('reset-btn');
+        
         if (spinner) spinner.style.display = 'none';
         if (status) {
-          status.innerText = 'Error: ' + msg;
+          status.innerText = 'System Fault';
           status.classList.replace('text-stone-700', 'text-red-500');
         }
+        if (detailEl) {
+          detailEl.innerText = msg + (details ? '\n' + details : '');
+          detailEl.classList.remove('hidden');
+        }
+        if (resetBtn) resetBtn.classList.remove('hidden');
       }
 
+      // 3. Application Bootstrap
       async function bootstrap() {
-        try {
-          const transpiledFiles = {};
-          const files = [
-            { id: './types', url: './types.ts' },
-            { id: './App', url: './App.tsx' },
-            { id: 'index', url: './index.tsx' }
-          ];
+        const version = Date.now(); // Cache buster
+        const transpiledFiles = {};
+        const files = [
+          { id: './types', url: 'types.ts' },
+          { id: './App', url: 'App.tsx' },
+          { id: 'index', url: 'index.tsx' }
+        ];
 
+        try {
           for (const file of files) {
-            const response = await fetch(file.url);
-            if (!response.ok) throw new Error(`HTTP ${response.status} fetching ${file.url}`);
+            // Try fetching from root with cache buster to bypass broken SW caches
+            const fetchUrl = `${file.url}?v=${version}`;
+            const response = await fetch(fetchUrl);
+            
+            if (!response.ok) {
+              throw new Error(`Failed to load ${file.url} (Status: ${response.status})`);
+            }
+            
             let code = await response.text();
             
             // Map internal relative imports to blob URLs
-            if (file.id === './App') code = code.replace(/from\s+['"]\.\/types['"]/g, `from '${transpiledFiles['./types']}'`);
-            if (file.id === 'index') code = code.replace(/from\s+['"]\.\/App['"]/g, `from '${transpiledFiles['./App']}'`);
+            if (file.id === './App') {
+              code = code.replace(/from\s+['"]\.\/types['"]/g, `from '${transpiledFiles['./types']}'`);
+            }
+            if (file.id === 'index') {
+              code = code.replace(/from\s+['"]\.\/App['"]/g, `from '${transpiledFiles['./App']}'`);
+            }
 
             const transformed = Babel.transform(code, {
               presets: [
@@ -115,12 +150,14 @@
             const blob = new Blob([transformed], { type: 'application/javascript' });
             transpiledFiles[file.id] = URL.createObjectURL(blob);
           }
+          
           await import(transpiledFiles['index']);
         } catch (err) {
-          console.error("Boot error:", err);
-          showError(err.message);
+          console.error("Bootstrap error:", err);
+          showError(err.message, err.stack?.split('\n')[0]);
         }
       }
+
       bootstrap();
     </script>
   </body>
