@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-[#050505]">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -13,27 +13,44 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:wght@700;800&display=swap');
-      body {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: #050505;
-        color: #F9FAFB;
-        margin: 0;
-        overflow-x: hidden;
-        overscroll-behavior-y: contain;
+      
+      :root {
+        --bg-color: #050505;
       }
+
+      html, body {
+        height: 100%;
+        margin: 0;
+        background-color: var(--bg-color);
+        color: #F9FAFB;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        /* Prevent elastic bounce revealing white background */
+        overscroll-behavior: none;
+        overflow-x: hidden;
+      }
+
+      #root {
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+
       .font-display { font-family: 'Bricolage Grotesque', sans-serif; }
+      
       .glass-card {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
         backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
+
       .btn-primary {
         background: #f59e0b;
         color: #000;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.4);
       }
+
       .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       
@@ -48,6 +65,11 @@
         margin-top: -8px;
         box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
       }
+
+      /* Safe area helpers */
+      .pt-safe { padding-top: env(safe-area-inset-top); }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+      .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
     </style>
     <script type="importmap">
 {
@@ -64,7 +86,7 @@
   </head>
   <body>
     <div id="root">
-      <div id="loader" class="flex items-center justify-center min-h-screen p-6">
+      <div id="loader" class="flex items-center justify-center min-h-[100dvh] p-6">
         <div class="text-center space-y-6 max-w-xs w-full">
           <div id="spinner" class="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <div class="space-y-2">
@@ -205,8 +227,8 @@ const App: React.FC = () => {
   };
 
   const BeanList = () => (
-    <div className="max-w-xl mx-auto px-6 py-8 pb-32 fade-in min-h-screen">
-      <header className="flex justify-between items-end mb-12">
+    <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
+      <header className="flex justify-between items-end mb-12 mt-8 px-2">
         <div>
           <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Laboratory</span>
           <h1 className="text-5xl font-display text-white mt-1">Collections</h1>
@@ -218,15 +240,15 @@ const App: React.FC = () => {
       </header>
 
       {beans.length === 0 ? (
-        <div className="mt-12 text-center py-20">
-          <div className="w-24 h-24 bg-white/5 rounded-[40px] flex items-center justify-center mx-auto mb-8 border border-white/5">
+        <div className="flex-1 flex flex-col items-center justify-center py-20 px-4">
+          <div className="w-24 h-24 bg-white/5 rounded-[40px] flex items-center justify-center mb-8 border border-white/5">
             <Coffee className="text-amber-500 w-12 h-12 opacity-50" />
           </div>
-          <h3 className="text-2xl font-display text-white mb-3">No Beans Logged</h3>
+          <h3 className="text-2xl font-display text-white mb-3 text-center">No Beans Logged</h3>
           <button onClick={() => setView({ type: 'add-bean' })} className="btn-primary px-10 py-5 rounded-[2rem] font-bold text-black text-[11px]">INITIALIZE ARCHIVE</button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 pb-20">
           {beans.map(bean => {
             const bShots = shots.filter(s => s.beanId === bean.id);
             const avgRating = bShots.length > 0 ? (bShots.reduce((a, s) => a + s.rating, 0) / bShots.length).toFixed(1) : null;
@@ -248,8 +270,8 @@ const App: React.FC = () => {
       )}
 
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-10 bg-black/80 backdrop-blur-sm">
-          <div className="glass-card w-full max-w-md rounded-[48px] p-10 space-y-8 relative">
+        <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-10 bg-black/80 backdrop-blur-sm pt-safe">
+          <div className="glass-card w-full max-w-md rounded-[48px] p-10 space-y-8 relative mb-safe">
             <button onClick={() => setShowSettings(false)} className="absolute top-6 right-6 text-stone-500"><X size={24} /></button>
             <div className="text-center"><Database size={40} className="text-amber-500 mx-auto mb-4" /><h3 className="text-2xl font-display text-white">Data Vault</h3></div>
             <div className="space-y-4">
@@ -266,13 +288,13 @@ const App: React.FC = () => {
   const AddBeanForm = () => {
     const [formData, setFormData] = useState({ roaster: '', name: '', originType: 'Single Origin' as OriginType, roastType: 'Medium' as RoastType, tastingNotes: '' });
     return (
-      <div className="max-w-xl mx-auto px-6 py-8 pb-32 fade-in flex flex-col min-h-screen">
-        <header className="flex items-center justify-between mb-16">
+      <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
+        <header className="flex items-center justify-between mb-16 mt-8">
           <button onClick={() => setView({ type: 'bean-list' })} className="glass-card w-14 h-14 rounded-[24px] flex items-center justify-center text-stone-500"><ChevronLeft size={28} /></button>
           <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Initialize Bag</h2>
           <div className="w-14" />
         </header>
-        <form onSubmit={e => { e.preventDefault(); addBean(formData); }} className="space-y-10">
+        <form onSubmit={e => { e.preventDefault(); addBean(formData); }} className="space-y-10 flex-1">
           <div className="glass-card p-6 rounded-[40px] space-y-6">
             <input required type="text" placeholder="Roaster" className="w-full bg-white/5 border border-white/5 rounded-3xl p-5 text-white outline-none" value={formData.roaster} onChange={e => setFormData({ ...formData, roaster: e.target.value })} />
             <input required type="text" placeholder="Bean Name" className="w-full bg-white/5 border border-white/5 rounded-3xl p-5 text-white outline-none" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
@@ -291,7 +313,7 @@ const App: React.FC = () => {
               ))}
             </div>
           </div>
-          <button type="submit" className="btn-primary w-full py-6 rounded-[2.5rem] font-black text-[12px] uppercase">Register Collection</button>
+          <button type="submit" className="btn-primary w-full py-6 rounded-[2.5rem] font-black text-[12px] uppercase mt-auto">Register Collection</button>
         </form>
       </div>
     );
@@ -305,13 +327,13 @@ const App: React.FC = () => {
     const sortedShots = [...bShots].sort((a, b) => sortOption === 'rating' ? b.rating - a.rating : b.timestamp - a.timestamp);
 
     return (
-      <div className="min-h-screen bg-[#050505] fade-in pb-32">
-        <div className="p-8 space-y-4">
+      <div className="min-h-[100dvh] pt-safe pb-safe bg-[#050505] fade-in">
+        <div className="p-8 space-y-4 mt-4">
           <button onClick={() => setView({ type: 'bean-list' })} className="glass-card p-3 rounded-2xl text-white"><ChevronLeft size={24} /></button>
           <h1 className="text-5xl font-display text-white leading-tight">{bean.name}</h1>
           <p className="text-amber-500 font-bold tracking-widest text-xs uppercase">{bean.roaster}</p>
         </div>
-        <div className="px-6 space-y-8">
+        <div className="px-6 space-y-8 pb-32">
           <div className="glass-card p-10 rounded-[56px] border-white/10">
             <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-6">Best Pull</h3>
             {bestShot ? (
@@ -342,7 +364,9 @@ const App: React.FC = () => {
             ))}
           </div>
         </div>
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2"><button onClick={() => setView({ type: 'add-shot', beanId })} className="btn-primary h-20 px-12 rounded-[2.5rem] flex items-center gap-4 text-black font-black uppercase"><Zap size={24} />Initialize Pull</button></div>
+        <div className="fixed bottom-0 left-0 right-0 p-8 pt-0 pb-safe bg-gradient-to-t from-[#050505] to-transparent">
+          <button onClick={() => setView({ type: 'add-shot', beanId })} className="btn-primary w-full h-20 rounded-[2.5rem] flex items-center justify-center gap-4 text-black font-black uppercase"><Zap size={24} />Initialize Pull</button>
+        </div>
       </div>
     );
   };
@@ -351,9 +375,9 @@ const App: React.FC = () => {
     const last = shots.filter(s => s.beanId === beanId)[0];
     const [fd, setFd] = useState({ beanId, dose: last?.dose || 18, yield: last?.yield || 36, time: last?.time || 30, grindSetting: last?.grindSetting || '', rating: 7, notes: '' });
     return (
-      <div className="max-w-xl mx-auto px-6 py-8 pb-32 fade-in min-h-screen">
-        <header className="flex items-center justify-between mb-16"><button onClick={() => setView({ type: 'bean-details', beanId })} className="glass-card p-4 rounded-2xl"><ChevronLeft size={28} /></button><h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Log Protocol</h2><div className="w-14"/></header>
-        <form onSubmit={e => { e.preventDefault(); addShot(fd); }} className="space-y-8">
+      <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
+        <header className="flex items-center justify-between mb-16 mt-8"><button onClick={() => setView({ type: 'bean-details', beanId })} className="glass-card p-4 rounded-2xl"><ChevronLeft size={28} /></button><h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Log Protocol</h2><div className="w-14"/></header>
+        <form onSubmit={e => { e.preventDefault(); addShot(fd); }} className="space-y-8 flex-1">
           <div className="glass-card p-10 rounded-[56px] space-y-10">
             <div className="grid grid-cols-2 gap-8 text-center">
               <div><label className="text-[9px] text-stone-600 uppercase block mb-2">Dose (g)</label><input type="number" step="0.1" className="w-full bg-white/5 p-4 rounded-2xl text-2xl font-display text-center outline-none text-white" value={fd.dose} onChange={e => setFd({...fd, dose: +e.target.value})} /></div>
@@ -361,16 +385,18 @@ const App: React.FC = () => {
             </div>
             <div className="text-center"><label className="text-[9px] text-stone-600 uppercase block mb-4">Seconds</label><input type="number" className="w-full bg-white/5 p-8 rounded-3xl text-6xl font-display text-center outline-none text-white" value={fd.time} onChange={e => setFd({...fd, time: +e.target.value})} /></div>
           </div>
-          <div className="glass-card p-10 rounded-[56px]"><label className="text-[9px] text-stone-600 uppercase mb-4 block">Grind Setting</label><input type="text" className="w-full bg-white/5 p-6 rounded-3xl text-3xl font-display outline-none text-amber-500" value={fd.grindSetting} onChange={e => setFd({...fd, grindSetting: e.target.value})} /></div>
-          <div className="glass-card p-10 rounded-[56px]"><label className="text-[9px] text-stone-600 uppercase mb-4 block">Rating: {fd.rating}/10</label><input type="range" min="1" max="10" className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500" value={fd.rating} onChange={e => setFd({...fd, rating: +e.target.value})} /></div>
-          <button type="submit" className="btn-primary w-full py-8 rounded-[3rem] font-black uppercase text-black">Commit Extraction</button>
+          <div className="glass-card p-8 rounded-[56px] space-y-6">
+            <div><label className="text-[9px] text-stone-600 uppercase mb-4 block">Grind Setting</label><input type="text" className="w-full bg-white/5 p-6 rounded-3xl text-3xl font-display outline-none text-amber-500" value={fd.grindSetting} onChange={e => setFd({...fd, grindSetting: e.target.value})} /></div>
+            <div><label className="text-[9px] text-stone-600 uppercase mb-4 block">Rating: {fd.rating}/10</label><input type="range" min="1" max="10" className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500" value={fd.rating} onChange={e => setFd({...fd, rating: +e.target.value})} /></div>
+          </div>
+          <button type="submit" className="btn-primary w-full py-8 rounded-[3rem] font-black uppercase text-black mt-auto">Commit Extraction</button>
         </form>
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-stone-100 overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-[#050505] text-stone-100 flex flex-col">
       {view.type === 'bean-list' && <BeanList />}
       {view.type === 'add-bean' && <AddBeanForm />}
       {view.type === 'bean-details' && <BeanDetails beanId={view.beanId} />}
