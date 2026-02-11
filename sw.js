@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'beanlog-v10';
+const CACHE_NAME = 'bragupro-v11';
 const ASSETS = [
   './',
   './index.html',
@@ -31,7 +31,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // Cache-first for heavy dependencies
   if (event.request.url.includes('unpkg.com') || event.request.url.includes('tailwindcss.com')) {
     event.respondWith(
       caches.match(event.request).then(response => response || fetch(event.request))
@@ -39,7 +38,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for the app logic to ensure updates are seen
   event.respondWith(
     fetch(event.request).catch(() => {
       return caches.match(event.request) || (

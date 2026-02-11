@@ -50,7 +50,7 @@ declare global {
 }
 
 window.emergencyReset = () => {
-  if (window.confirm("CRITICAL: This will wipe all coffee logs and settings. Proceed?")) {
+  if (window.confirm("CRITICAL: This will wipe all Bragu Pro logs and settings. Proceed?")) {
     localStorage.removeItem(STORAGE_KEY);
     window.location.reload();
   }
@@ -147,7 +147,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `beanlog-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `bragupro-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -178,7 +178,7 @@ const App: React.FC = () => {
     <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
       <header className="flex justify-between items-center mb-12 mt-2 px-2">
         <div className="flex-1 min-w-0 pr-6">
-          <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Laboratory v0.4</span>
+          <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Bragu Pro v0.5</span>
           <h1 className="text-4xl font-display text-white mt-1 leading-tight truncate">Collections</h1>
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
@@ -231,7 +231,7 @@ const App: React.FC = () => {
             <div className="text-center pt-4">
                 <Database size={48} className="text-amber-500 mx-auto mb-6" />
                 <h3 className="text-3xl font-display text-white mb-1">Data Vault</h3>
-                <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">v0.4 Stable Archive</p>
+                <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">v0.5 Stable Archive</p>
             </div>
             <div className="space-y-4 pt-4">
               <button onClick={exportData} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Export Backup</span><Download className="text-stone-500" /></button>

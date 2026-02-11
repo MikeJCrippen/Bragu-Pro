@@ -1,14 +1,14 @@
 
 {
-  "name": "BeanLog Espresso",
-  "short_name": "BeanLog",
+  "name": "Bragu Pro Espresso",
+  "short_name": "Bragu Pro",
   "start_url": "./",
   "display": "standalone",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "background_color": "#050505",
   "theme_color": "#050505",
   "orientation": "portrait",
-  "description": "Premium Espresso Shot Logger",
+  "description": "Professional Espresso Shot Logger",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/924/924514.png",
