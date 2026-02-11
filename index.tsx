@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { 
   Coffee, Plus, ChevronLeft, Star, ArrowUpDown, Trash2, 
-  ChevronRight, Database, X, Zap, Download, Upload, Edit3 
+  ChevronRight, Database, X, Zap, Download, Upload, Edit3, Camera
 } from 'lucide-react';
 
 // --- Types ---
@@ -17,6 +17,7 @@ interface Bean {
   originType: OriginType;
   roastType: RoastType;
   tastingNotes: string;
+  image?: string; // Base64 compressed image
   createdAt: number;
 }
 
@@ -40,6 +41,50 @@ type ViewState =
   | { type: 'add-shot'; beanId: string };
 
 const STORAGE_KEY = 'bean_log_data_v1';
+
+// Fix: Add window augmentation and implementation for the emergencyReset function used in the UI
+declare global {
+  interface Window {
+    emergencyReset: () => void;
+  }
+}
+
+window.emergencyReset = () => {
+  if (window.confirm("CRITICAL: This will wipe all coffee logs and settings. Proceed?")) {
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
+  }
+};
+
+// --- Utilities ---
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
 
 // --- App Component ---
 const App: React.FC = () => {
@@ -133,7 +178,7 @@ const App: React.FC = () => {
     <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
       <header className="flex justify-between items-center mb-12 mt-2 px-2">
         <div className="flex-1 min-w-0 pr-6">
-          <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Laboratory v0.2</span>
+          <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Laboratory v0.4</span>
           <h1 className="text-4xl font-display text-white mt-1 leading-tight truncate">Collections</h1>
         </div>
         <div className="flex items-center gap-4 flex-shrink-0">
@@ -156,16 +201,23 @@ const App: React.FC = () => {
             const bShots = shots.filter(s => s.beanId === bean.id);
             const avgRating = bShots.length > 0 ? (bShots.reduce((a, s) => a + s.rating, 0) / bShots.length).toFixed(1) : null;
             return (
-              <button key={bean.id} onClick={() => setView({ type: 'bean-details', beanId: bean.id })} className="glass-card w-full p-6 rounded-[38px] flex items-center text-left transition-transform active:scale-[0.98]">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md">{bean.roastType}</span>
-                    {avgRating && <div className="flex items-center gap-1 text-[10px] font-bold text-amber-200"><Star size={10} className="fill-amber-500 text-amber-500" />{avgRating}</div>}
-                  </div>
-                  <h3 className="text-2xl font-display text-white mb-0.5">{bean.name}</h3>
-                  <p className="text-stone-500 text-sm font-semibold">{bean.roaster}</p>
+              <button key={bean.id} onClick={() => setView({ type: 'bean-details', beanId: bean.id })} className="glass-card w-full p-4 rounded-[38px] flex items-center text-left transition-transform active:scale-[0.98]">
+                <div className="w-20 h-20 rounded-[28px] overflow-hidden mr-5 bg-stone-900 border border-white/5 flex-shrink-0">
+                  {bean.image ? (
+                    <img src={bean.image} className="w-full h-full object-cover opacity-80" alt={bean.name} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center"><Coffee className="text-stone-700" size={24} /></div>
+                  )}
                 </div>
-                <ChevronRight size={24} className="text-stone-600" />
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[7px] font-black uppercase tracking-[0.2em] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-sm">{bean.roastType}</span>
+                    {avgRating && <div className="flex items-center gap-1 text-[9px] font-bold text-amber-200/80"><Star size={8} className="fill-amber-500 text-amber-500" />{avgRating}</div>}
+                  </div>
+                  <h3 className="text-xl font-display text-white mb-0.5 truncate">{bean.name}</h3>
+                  <p className="text-stone-500 text-xs font-semibold truncate">{bean.roaster}</p>
+                </div>
+                <ChevronRight size={20} className="text-stone-600 flex-shrink-0" />
               </button>
             );
           })}
@@ -179,13 +231,13 @@ const App: React.FC = () => {
             <div className="text-center pt-4">
                 <Database size={48} className="text-amber-500 mx-auto mb-6" />
                 <h3 className="text-3xl font-display text-white mb-1">Data Vault</h3>
-                <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">v0.2 Stable Archive</p>
+                <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">v0.4 Stable Archive</p>
             </div>
             <div className="space-y-4 pt-4">
               <button onClick={exportData} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Export Backup</span><Download className="text-stone-500" /></button>
               <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Restore Backup</span><Upload className="text-stone-500" /></button>
               <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json" />
-              <button onClick={() => window.location.reload()} className="w-full py-4 text-stone-600 text-[10px] font-black uppercase tracking-widest">Reboot System</button>
+              <button onClick={() => window.emergencyReset()} className="w-full py-4 text-stone-600 text-[10px] font-black uppercase tracking-widest">Reboot System</button>
             </div>
           </div>
         </div>
@@ -200,17 +252,47 @@ const App: React.FC = () => {
       name: existing?.name || '', 
       originType: existing?.originType || 'Single Origin' as OriginType, 
       roastType: existing?.roastType || 'Medium' as RoastType, 
-      tastingNotes: existing?.tastingNotes || '' 
+      tastingNotes: existing?.tastingNotes || '',
+      image: existing?.image || ''
     });
+    const photoInputRef = useRef<HTMLInputElement>(null);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        try {
+          const compressed = await compressImage(file);
+          setFormData({ ...formData, image: compressed });
+        } catch (err) { alert("Failed to process image."); }
+      }
+    };
 
     return (
       <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
-        <header className="flex items-center justify-between mb-16 mt-2 px-2">
+        <header className="flex items-center justify-between mb-10 mt-2 px-2">
           <button onClick={() => setView(existing ? { type: 'bean-details', beanId: existing.id } : { type: 'bean-list' })} className="glass-card w-14 h-14 rounded-full flex items-center justify-center text-stone-500"><ChevronLeft size={28} /></button>
           <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">{existing ? 'Modify' : 'Initialize'} Bag</h2>
           <div className="w-14" />
         </header>
+
         <form onSubmit={e => { e.preventDefault(); existing ? updateBean(existing.id, formData) : addBean(formData); }} className="space-y-10 flex-1 flex flex-col">
+          <div className="flex justify-center mb-4">
+            <button type="button" onClick={() => photoInputRef.current?.click()} className="relative w-32 h-32 rounded-[2.5rem] overflow-hidden glass-card border-white/10 flex items-center justify-center transition-transform active:scale-95 group">
+              {formData.image ? (
+                <>
+                  <img src={formData.image} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Edit3 size={24} className="text-white" /></div>
+                </>
+              ) : (
+                <div className="text-center">
+                  <Camera size={32} className="text-stone-600 mx-auto mb-2" />
+                  <span className="text-[8px] font-black uppercase text-stone-600 tracking-tighter">Add Photo</span>
+                </div>
+              )}
+              <input type="file" ref={photoInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+            </button>
+          </div>
+
           <div className="glass-card p-8 rounded-[48px] space-y-6 shadow-2xl">
             <input required type="text" placeholder="Roaster" className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-6 text-white outline-none focus:border-amber-500/30 transition-colors" value={formData.roaster} onChange={e => setFormData({ ...formData, roaster: e.target.value })} />
             <input required type="text" placeholder="Bean Name" className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-6 text-white outline-none focus:border-amber-500/30 transition-colors" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
@@ -263,37 +345,61 @@ const App: React.FC = () => {
 
     return (
       <div className="min-h-[100dvh] pt-safe pb-safe bg-[#050505] fade-in flex flex-col">
-        <div className="p-8 space-y-4 mt-2 px-8">
-          <div className="flex justify-between items-center mb-4">
-            <button onClick={() => setView({ type: 'bean-list' })} className="glass-card p-4 rounded-3xl text-white transition-transform active:scale-95"><ChevronLeft size={24} /></button>
-            <button onClick={() => setView({ type: 'edit-bean', beanId: bean.id })} className="glass-card p-4 rounded-3xl text-stone-500 transition-transform active:scale-95"><Edit3 size={20} /></button>
+        {/* Immersive Header */}
+        <div className="relative h-[45vh] w-full overflow-hidden">
+          {bean.image ? (
+            <img src={bean.image} className="absolute inset-0 w-full h-full object-cover" alt={bean.name} />
+          ) : (
+            <div className="absolute inset-0 bg-stone-900 flex items-center justify-center opacity-30"><Coffee size={120} className="text-stone-700" /></div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-[#050505]" />
+          
+          <div className="absolute top-0 left-0 right-0 p-8 flex justify-between items-center mt-2">
+            <button onClick={() => setView({ type: 'bean-list' })} className="glass-card p-4 rounded-3xl text-white backdrop-blur-md transition-transform active:scale-95"><ChevronLeft size={24} /></button>
+            <button onClick={() => setView({ type: 'edit-bean', beanId: bean.id })} className="glass-card p-4 rounded-3xl text-white backdrop-blur-md transition-transform active:scale-95"><Edit3 size={20} /></button>
           </div>
-          <h1 className="text-6xl font-display text-white leading-tight tracking-tight">{bean.name}</h1>
-          <p className="text-amber-500 font-black tracking-[0.3em] text-xs uppercase">{bean.roaster}</p>
+
+          <div className="absolute bottom-0 left-0 right-0 p-10 pb-4">
+            <p className="text-amber-500 font-black tracking-[0.4em] text-[10px] uppercase mb-3">{bean.roaster}</p>
+            <h1 className="text-5xl font-display text-white leading-tight tracking-tight drop-shadow-2xl">{bean.name}</h1>
+          </div>
         </div>
         
         <div className="px-6 space-y-8 flex-1 pb-40">
+          <div className="flex gap-4">
+            <div className="glass-card flex-1 p-5 rounded-[2.5rem] text-center">
+              <span className="text-[8px] font-black text-stone-600 uppercase block mb-1">Roast</span>
+              <span className="text-xs font-bold text-stone-200">{bean.roastType}</span>
+            </div>
+            <div className="glass-card flex-1 p-5 rounded-[2.5rem] text-center">
+              <span className="text-[8px] font-black text-stone-600 uppercase block mb-1">Origin</span>
+              <span className="text-xs font-bold text-stone-200">{bean.originType}</span>
+            </div>
+          </div>
+
           {bean.tastingNotes && (
              <div className="glass-card p-8 rounded-[48px] border-white/5">
-                <h3 className="text-[10px] font-black text-stone-700 uppercase tracking-widest mb-3">Notes</h3>
+                <h3 className="text-[10px] font-black text-stone-700 uppercase tracking-widest mb-3">Tasting Notes</h3>
                 <p className="text-stone-300 font-medium leading-relaxed italic">"{bean.tastingNotes}"</p>
              </div>
           )}
 
-          <div className="glass-card p-12 rounded-[64px] border-white/10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-10"><Coffee size={120} /></div>
-            <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-8">Optimal Protocol</h3>
+          <div className="glass-card p-12 rounded-[64px] border-white/10 shadow-2xl relative overflow-hidden bg-white/[0.02]">
+            <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-8 text-center">Optimal Extraction</h3>
             {bestShot ? (
               <div className="grid grid-cols-3 gap-6 text-center relative z-10">
-                <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2">Dose</p><p className="text-4xl font-display text-white">{bestShot.dose}<span className="text-xs ml-0.5 opacity-40">g</span></p></div>
-                <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2">Yield</p><p className="text-4xl font-display text-white">{bestShot.yield}<span className="text-xs ml-0.5 opacity-40">g</span></p></div>
-                <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2">Time</p><p className="text-4xl font-display text-white">{bestShot.time}<span className="text-xs ml-0.5 opacity-40">s</span></p></div>
+                <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2">Dose</p><p className="text-4xl font-display text-white">{bestShot.dose}<span className="text-xs ml-0.5 opacity-40 font-sans">g</span></p></div>
+                <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2">Yield</p><p className="text-4xl font-display text-white">{bestShot.yield}<span className="text-xs ml-0.5 opacity-40 font-sans">g</span></p></div>
+                <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2">Time</p><p className="text-4xl font-display text-white">{bestShot.time}<span className="text-xs ml-0.5 opacity-40 font-sans">s</span></p></div>
               </div>
             ) : <p className="text-stone-600 italic text-center py-4 font-bold">No telemetry recorded yet.</p>}
           </div>
 
           <div className="space-y-4">
-            <div className="flex justify-between items-center px-4"><h3 className="text-[11px] font-black text-stone-700 uppercase tracking-widest">History</h3><button onClick={() => setSortOption(s => s === 'rating' ? 'recent' : 'rating')} className="p-2 text-stone-600 active:text-amber-500 transition-colors"><ArrowUpDown size={18} /></button></div>
+            <div className="flex justify-between items-center px-4"><h3 className="text-[11px] font-black text-stone-700 uppercase tracking-widest">Extraction History</h3><button onClick={() => setSortOption(s => s === 'rating' ? 'recent' : 'rating')} className="p-2 text-stone-600 active:text-amber-500 transition-colors"><ArrowUpDown size={18} /></button></div>
+            {sortedShots.length === 0 && (
+               <div className="text-center py-12 text-stone-700 font-black text-[10px] uppercase tracking-widest">Zero entries in archive</div>
+            )}
             {sortedShots.map(shot => (
               <div key={shot.id} className="glass-card p-7 rounded-[42px] space-y-4 border-white/5 shadow-xl">
                 <div className="flex justify-between items-center">
