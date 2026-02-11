@@ -106,7 +106,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { 
   Coffee, Plus, ChevronLeft, Star, ArrowUpDown, Trash2, 
-  ChevronRight, Database, X, Zap, Download, Upload 
+  ChevronRight, Database, X, Zap, Download, Upload, Edit3 
 } from 'lucide-react';
 
 type OriginType = 'Single Origin' | 'Blend';
@@ -137,6 +137,7 @@ interface Shot {
 type ViewState = 
   | { type: 'bean-list' }
   | { type: 'add-bean' }
+  | { type: 'edit-bean'; beanId: string }
   | { type: 'bean-details'; beanId: string }
   | { type: 'add-shot'; beanId: string };
 
@@ -171,6 +172,11 @@ const App: React.FC = () => {
     setView({ type: 'bean-list' });
   };
 
+  const updateBean = (id: string, updates: Omit<Bean, 'id' | 'createdAt'>) => {
+    setBeans(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+    setView({ type: 'bean-details', beanId: id });
+  };
+
   const deleteBean = (id: string) => {
     if (window.confirm("Archive these beans? All shot logs will be lost.")) {
       setBeans(prev => prev.filter(b => b.id !== id));
@@ -197,7 +203,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `beanlog-v0.2-backup-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `beanlog-backup-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -280,7 +286,7 @@ const App: React.FC = () => {
               <button onClick={exportData} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Export Backup</span><Download className="text-stone-500" /></button>
               <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Restore Backup</span><Upload className="text-stone-500" /></button>
               <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json" />
-              <button onClick={() => window.location.reload()} className="w-full py-4 text-stone-600 text-[10px] font-black uppercase tracking-widest">Reboot System</button>
+              <button onClick={() => window.emergencyReset()} className="w-full py-4 text-stone-600 text-[10px] font-black uppercase tracking-widest">Reboot System</button>
             </div>
           </div>
         </div>
@@ -288,20 +294,29 @@ const App: React.FC = () => {
     </div>
   );
 
-  const AddBeanForm = () => {
-    const [formData, setFormData] = useState({ roaster: '', name: '', originType: 'Single Origin' as OriginType, roastType: 'Medium' as RoastType, tastingNotes: '' });
+  const BeanForm = ({ beanId }: { beanId?: string }) => {
+    const existing = beanId ? beans.find(b => b.id === beanId) : null;
+    const [formData, setFormData] = useState({ 
+      roaster: existing?.roaster || '', 
+      name: existing?.name || '', 
+      originType: existing?.originType || 'Single Origin' as OriginType, 
+      roastType: existing?.roastType || 'Medium' as RoastType, 
+      tastingNotes: existing?.tastingNotes || '' 
+    });
+
     return (
       <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
         <header className="flex items-center justify-between mb-16 mt-2 px-2">
-          <button onClick={() => setView({ type: 'bean-list' })} className="glass-card w-14 h-14 rounded-full flex items-center justify-center text-stone-500"><ChevronLeft size={28} /></button>
-          <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">Initialize Bag</h2>
+          <button onClick={() => setView(existing ? { type: 'bean-details', beanId: existing.id } : { type: 'bean-list' })} className="glass-card w-14 h-14 rounded-full flex items-center justify-center text-stone-500"><ChevronLeft size={28} /></button>
+          <h2 className="text-[10px] font-black text-white uppercase tracking-[0.4em]">{existing ? 'Modify' : 'Initialize'} Bag</h2>
           <div className="w-14" />
         </header>
-        <form onSubmit={e => { e.preventDefault(); addBean(formData); }} className="space-y-10 flex-1 flex flex-col">
+        <form onSubmit={e => { e.preventDefault(); existing ? updateBean(existing.id, formData) : addBean(formData); }} className="space-y-10 flex-1 flex flex-col">
           <div className="glass-card p-8 rounded-[48px] space-y-6 shadow-2xl">
             <input required type="text" placeholder="Roaster" className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-6 text-white outline-none focus:border-amber-500/30 transition-colors" value={formData.roaster} onChange={e => setFormData({ ...formData, roaster: e.target.value })} />
             <input required type="text" placeholder="Bean Name" className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-6 text-white outline-none focus:border-amber-500/30 transition-colors" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
           </div>
+          
           <div className="grid grid-cols-2 gap-6">
             <div className="glass-card p-8 rounded-[48px]">
               <label className="text-[10px] font-black text-stone-600 uppercase mb-6 block">Classification</label>
@@ -316,8 +331,24 @@ const App: React.FC = () => {
               ))}
             </div>
           </div>
+
+          <div className="glass-card p-8 rounded-[48px] shadow-xl">
+            <label className="text-[10px] font-black text-stone-600 uppercase mb-4 block">Tasting Notes</label>
+            <textarea 
+              placeholder="e.g. Milk Chocolate, Stone Fruit..." 
+              className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-6 text-white outline-none focus:border-amber-500/30 transition-colors min-h-[120px] resize-none" 
+              value={formData.tastingNotes} 
+              onChange={e => setFormData({ ...formData, tastingNotes: e.target.value })}
+            />
+          </div>
+
           <div className="mt-auto pb-10">
-            <button type="submit" className="btn-primary w-full py-7 rounded-[3rem] font-black text-[14px] uppercase shadow-2xl">Register Bag</button>
+            <button type="submit" className="btn-primary w-full py-7 rounded-[3rem] font-black text-[14px] uppercase shadow-2xl">
+              {existing ? 'Apply Telemetry' : 'Register Bag'}
+            </button>
+            {existing && (
+              <button type="button" onClick={() => deleteBean(existing.id)} className="w-full mt-4 py-4 text-red-500/50 text-[10px] font-black uppercase tracking-widest">Delete Collection</button>
+            )}
           </div>
         </form>
       </div>
@@ -334,11 +365,22 @@ const App: React.FC = () => {
     return (
       <div className="min-h-[100dvh] pt-safe pb-safe bg-[#050505] fade-in flex flex-col">
         <div className="p-8 space-y-4 mt-2 px-8">
-          <button onClick={() => setView({ type: 'bean-list' })} className="glass-card p-4 rounded-3xl text-white inline-flex mb-4 transition-transform active:scale-95"><ChevronLeft size={24} /></button>
+          <div className="flex justify-between items-center mb-4">
+            <button onClick={() => setView({ type: 'bean-list' })} className="glass-card p-4 rounded-3xl text-white transition-transform active:scale-95"><ChevronLeft size={24} /></button>
+            <button onClick={() => setView({ type: 'edit-bean', beanId: bean.id })} className="glass-card p-4 rounded-3xl text-stone-500 transition-transform active:scale-95"><Edit3 size={20} /></button>
+          </div>
           <h1 className="text-6xl font-display text-white leading-tight tracking-tight">{bean.name}</h1>
           <p className="text-amber-500 font-black tracking-[0.3em] text-xs uppercase">{bean.roaster}</p>
         </div>
+        
         <div className="px-6 space-y-8 flex-1 pb-40">
+          {bean.tastingNotes && (
+             <div className="glass-card p-8 rounded-[48px] border-white/5">
+                <h3 className="text-[10px] font-black text-stone-700 uppercase tracking-widest mb-3">Notes</h3>
+                <p className="text-stone-300 font-medium leading-relaxed italic">"{bean.tastingNotes}"</p>
+             </div>
+          )}
+
           <div className="glass-card p-12 rounded-[64px] border-white/10 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-10"><Coffee size={120} /></div>
             <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-8">Optimal Protocol</h3>
@@ -350,6 +392,7 @@ const App: React.FC = () => {
               </div>
             ) : <p className="text-stone-600 italic text-center py-4 font-bold">No telemetry recorded yet.</p>}
           </div>
+
           <div className="space-y-4">
             <div className="flex justify-between items-center px-4"><h3 className="text-[11px] font-black text-stone-700 uppercase tracking-widest">History</h3><button onClick={() => setSortOption(s => s === 'rating' ? 'recent' : 'rating')} className="p-2 text-stone-600 active:text-amber-500 transition-colors"><ArrowUpDown size={18} /></button></div>
             {sortedShots.map(shot => (
@@ -370,6 +413,7 @@ const App: React.FC = () => {
             ))}
           </div>
         </div>
+
         <div className="fixed bottom-0 left-0 right-0 p-8 pb-12 pt-12 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent z-40">
           <button onClick={() => setView({ type: 'add-shot', beanId })} className="btn-primary w-full h-20 rounded-[2.5rem] flex items-center justify-center gap-4 text-black font-black uppercase shadow-2xl shadow-amber-500/30 mb-safe active:scale-[0.98] transition-transform"><Zap size={24} />Record Extraction</button>
         </div>
@@ -418,7 +462,8 @@ const App: React.FC = () => {
     <div className="h-[100dvh] w-screen bg-[#050505] text-stone-100 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto">
         {view.type === 'bean-list' && <BeanList />}
-        {view.type === 'add-bean' && <AddBeanForm />}
+        {view.type === 'add-bean' && <BeanForm />}
+        {view.type === 'edit-bean' && <BeanForm beanId={view.beanId} />}
         {view.type === 'bean-details' && <BeanDetails beanId={view.beanId} />}
         {view.type === 'add-shot' && <AddShotForm beanId={view.beanId} />}
       </div>
