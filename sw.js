@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'beanlog-v7';
+const CACHE_NAME = 'beanlog-v8';
 const ASSETS = [
   '/',
   '/index.html',
@@ -11,9 +11,8 @@ const ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS).catch(err => {
-        console.warn('Pre-cache warning:', err);
-      });
+      // Use cache.addAll but catch individual failures to avoid breaking install
+      return Promise.allSettled(ASSETS.map(url => cache.add(url)));
     })
   );
   self.skipWaiting();
@@ -31,26 +30,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Skip cache-busting versioned requests
-  if (event.request.url.includes('?v=')) {
-    return; 
-  }
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
 
-  // 2. Handle navigation requests (PWA Launch)
-  if (event.request.mode === 'navigate') {
+  // For the large Babel file and Tailwind, prefer cache, then network
+  if (event.request.url.includes('unpkg.com') || event.request.url.includes('tailwindcss.com')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        return caches.match('/index.html') || caches.match('/');
-      })
+      caches.match(event.request).then(response => response || fetch(event.request))
     );
     return;
   }
 
-  // 3. Standard asset caching
+  // For everything else, try network first to get latest updates, fallback to cache
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-      return fetch(event.request);
+    fetch(event.request).catch(() => {
+      return caches.match(event.request) || (
+        event.request.mode === 'navigate' ? caches.match('/index.html') : null
+      );
     })
   );
 });

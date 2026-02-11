@@ -1,0 +1,19 @@
+
+[build]
+  # No build command needed as we are using Babel-in-browser
+  command = ""
+  # The directory to publish (root)
+  publish = "."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Helps with PWA and caching
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
