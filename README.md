@@ -1,34 +1,36 @@
 
-# ☕ BeanLog Setup Guide
+# ☕ BeanLog v0.3 — Espresso Dial-In Lab
 
-The app is built to be a **Standalone PWA**. Since it uses your browser's local storage, your data stays on your phone regardless of where the files are hosted.
-
----
-
-## 💎 Option A: The "Cleanest" Way (Recommended)
-Host the files on a free service. This gives you a permanent `https://` address and the **"Install App"** button on your phone.
-
-1. Go to [Netlify Drop](https://app.netlify.com/drop).
-2. Drag and drop this entire folder into the browser.
-3. Once it's live, open that URL on your phone in Vivaldi/Chrome.
-4. Tap **"Install App"** or **"Add to Home Screen"**.
-5. **Done.** No server to maintain, works 100% offline.
+A professional-grade, standalone PWA for logging your espresso journey. Your data stays in your pocket, powered by your browser's local storage.
 
 ---
 
-## 🏠 Option B: The "Local Pi" Way
-Use this if you want to keep everything on your local network.
+## 🚀 The GitHub Pages Advantage (Recommended)
+GitHub Pages is the fastest, safest, and 100% free way to host your private dial-in tool. No monthly credit limits, no server maintenance, and instant updates.
 
-1. On your Pi, run:
-   ```bash
-   python3 serve.py
-   ```
-2. On your phone, go to `http://<your-pi-ip>:8000`.
-3. **Note:** Because it is `http` (not `https`), you won't see an "Install App" button. 
-4. Instead, open the Vivaldi menu and tap **"Add to Home Screen"**.
-5. It will still create an icon on your phone and open in a standalone window!
+### One-Time Setup:
+1.  **Sync your code** to your GitHub repository.
+2.  On GitHub.com, go to **Settings** > **Pages**.
+3.  Set **Build and deployment** to "Deploy from a branch".
+4.  Select the `main` branch and `/(root)` folder.
+5.  Click **Save**.
+6.  Open the provided URL on your phone (Chrome/Vivaldi/Safari).
+
+### Installing as an App:
+-   **Android**: Tap the "Add to Home Screen" banner or menu option.
+-   **iOS**: Tap the "Share" icon and select "Add to Home Screen".
 
 ---
 
-## 💾 Data Safety
-Because your data is stored in your phone's browser, use the **Data Vault** (Database icon) inside the app to export `.json` backups occasionally. You can then import these backups into any other browser or device.
+## 💎 Version 0.3 Highlights
+-   **Optimized Credits**: Configured to bypass expensive build engines.
+-   **Deep Offline Support**: Robust Service Worker for reliable usage in cafes or basements with poor signal.
+-   **Relative Path Logic**: Full compatibility with GitHub Pages sub-directories.
+-   **Data Vault**: Integrated export/import tools for total data sovereignty.
+
+---
+
+## 💾 Data Sovereignty
+BeanLog does not use a cloud database. Your logs are stored strictly within your browser's **Local Storage**. 
+-   Use the **Data Vault** (Database icon) regularly to export `.json` backups.
+-   Clear browser data will wipe your logs—always keep a recent backup in your cloud drive of choice!

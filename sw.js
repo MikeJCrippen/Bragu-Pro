@@ -1,5 +1,5 @@
 
-const CACHE_NAME = 'beanlog-v9';
+const CACHE_NAME = 'beanlog-v10';
 const ASSETS = [
   './',
   './index.html',
