@@ -105,7 +105,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { 
   Coffee, Plus, ChevronLeft, Star, ArrowUpDown, Trash2, 
-  ChevronRight, Database, X, Zap, Download, Upload, Edit3, Camera
+  ChevronRight, Database, X, Zap, Download, Upload, Edit3, Camera, CheckCircle
 } from 'lucide-react';
 
 type OriginType = 'Single Origin' | 'Blend';
@@ -132,6 +132,7 @@ interface Shot {
   grindSetting: string;
   rating: number;
   notes: string;
+  isOptimal?: boolean;
 }
 
 type ViewState = 
@@ -236,6 +237,16 @@ const App: React.FC = () => {
     if (window.confirm("Remove this log entry?")) {
       setShots(prev => prev.filter(s => s.id !== id));
     }
+  };
+
+  const toggleShotOptimal = (shotId: string, beanId: string) => {
+    setShots(prev => prev.map(s => {
+      if (s.beanId === beanId) {
+        if (s.id === shotId) return { ...s, isOptimal: !s.isOptimal };
+        return { ...s, isOptimal: false };
+      }
+      return s;
+    }));
   };
 
   const exportData = () => {
@@ -406,8 +417,13 @@ const App: React.FC = () => {
     const bean = beans.find(b => b.id === beanId);
     if (!bean) return null;
     const bShots = shots.filter(s => s.beanId === beanId);
-    const bestShot = bShots.sort((a, b) => b.rating - a.rating)[0];
+    
+    // Custom optimal selection: Priority to manually marked, then fallback to highest rating
+    const manualOptimal = bShots.find(s => s.isOptimal);
+    const bestShot = manualOptimal || [...bShots].sort((a, b) => b.rating - a.rating)[0];
+    
     const sortedShots = [...bShots].sort((a, b) => sortOption === 'rating' ? b.rating - a.rating : b.timestamp - a.timestamp);
+
     return (
       <div className="min-h-[100dvh] pt-safe pb-safe bg-[#050505] fade-in flex flex-col">
         <div className="relative h-[45vh] w-full overflow-hidden">
@@ -446,12 +462,31 @@ const App: React.FC = () => {
             <div className="flex justify-between items-center px-4"><h3 className="text-[11px] font-black text-stone-700 uppercase tracking-widest">Extraction History</h3><button onClick={() => setSortOption(s => s === 'rating' ? 'recent' : 'rating')} className="p-2 text-stone-600 active:text-amber-500 transition-colors"><ArrowUpDown size={18} /></button></div>
             {sortedShots.length === 0 && (<div className="text-center py-12 text-stone-700 font-black text-[10px] uppercase tracking-widest">Zero entries in archive</div>)}
             {sortedShots.map(shot => (
-              <div key={shot.id} className="glass-card p-7 rounded-[42px] space-y-4 border-white/5 shadow-xl">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3"><div className="bg-amber-500 text-black px-3 py-1 rounded-full text-[11px] font-black shadow-lg shadow-amber-500/10">{shot.rating}/10</div><span className="text-[10px] font-black text-stone-600 uppercase tracking-tighter">{new Date(shot.timestamp).toLocaleDateString()}</span></div>
-                  <button onClick={() => deleteShot(shot.id)} className="p-2 bg-white/5 rounded-full active:bg-red-500/20"><Trash2 size={16} className="text-stone-700" /></button>
+              <div key={shot.id} className={`glass-card p-7 rounded-[42px] space-y-4 border-white/5 shadow-xl transition-all ${shot.isOptimal ? 'ring-2 ring-amber-500/50 bg-amber-500/[0.02]' : ''}`}>
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-amber-500 text-black px-3 py-1 rounded-full text-[11px] font-black shadow-lg shadow-amber-500/10">{shot.rating.toFixed(1)}/10</div>
+                      <span className="text-[10px] font-black text-stone-600 uppercase tracking-tighter">{new Date(shot.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    {shot.notes && <p className="text-[11px] text-stone-400 italic px-1 max-w-[200px] leading-tight line-clamp-2">{shot.notes}</p>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => toggleShotOptimal(shot.id, beanId)} 
+                      className={`p-2 rounded-full transition-colors ${shot.isOptimal ? 'bg-amber-500 text-black' : 'bg-white/5 text-stone-700 hover:text-stone-400'}`}
+                      title="Set as Optimal"
+                    >
+                      <CheckCircle size={16} />
+                    </button>
+                    <button onClick={() => deleteShot(shot.id)} className="p-2 bg-white/5 rounded-full active:bg-red-500/20"><Trash2 size={16} className="text-stone-700" /></button>
+                  </div>
                 </div>
-                <div className="flex justify-between text-[13px] font-bold text-stone-300 px-1"><span className="opacity-80">{shot.dose}g → {shot.yield}g</span><span className="opacity-80">{shot.time}s</span><span className="text-amber-500/60 font-black uppercase text-[10px] tracking-widest">G:{shot.grindSetting}</span></div>
+                <div className="flex justify-between text-[13px] font-bold text-stone-300 px-1">
+                  <span className="opacity-80">{shot.dose}g → {shot.yield}g</span>
+                  <span className="opacity-80">{shot.time}s</span>
+                  <span className="text-amber-500/60 font-black uppercase text-[10px] tracking-widest">G:{shot.grindSetting}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -463,7 +498,7 @@ const App: React.FC = () => {
 
   const AddShotForm = ({ beanId }: { beanId: string }) => {
     const last = shots.filter(s => s.beanId === beanId)[0];
-    const [fd, setFd] = useState({ beanId, dose: last?.dose || 18, yield: last?.yield || 36, time: last?.time || 30, grindSetting: last?.grindSetting || '', rating: 7, notes: '' });
+    const [fd, setFd] = useState({ beanId, dose: last?.dose || 18, yield: last?.yield || 36, time: last?.time || 30, grindSetting: last?.grindSetting || '', rating: 7.0, notes: '', isOptimal: false });
     return (
       <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
         <header className="flex items-center justify-between mb-16 mt-2 px-2">
@@ -486,9 +521,18 @@ const App: React.FC = () => {
           <div className="glass-card p-10 rounded-[56px] space-y-8 shadow-xl">
             <div><label className="text-[10px] text-stone-600 uppercase font-black mb-6 block">Grind Index</label><input type="text" className="w-full bg-white/5 p-6 rounded-[2rem] text-4xl font-display outline-none text-amber-500 text-center focus:border-amber-500/20 border border-transparent" placeholder="..." value={fd.grindSetting} onChange={e => setFd({...fd, grindSetting: e.target.value})} /></div>
             <div>
-                <div className="flex justify-between items-center mb-6 px-2"><label className="text-[10px] text-stone-600 uppercase font-black">Success Rate</label><span className="text-amber-500 font-black text-xl">{fd.rating}/10</span></div>
-                <input type="range" min="1" max="10" className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500" value={fd.rating} onChange={e => setFd({...fd, rating: +e.target.value})} />
+                <div className="flex justify-between items-center mb-6 px-2"><label className="text-[10px] text-stone-600 uppercase font-black">Success Rate</label><span className="text-amber-500 font-black text-xl">{fd.rating.toFixed(1)}/10</span></div>
+                <input type="range" min="1" max="10" step="0.5" className="w-full h-3 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500" value={fd.rating} onChange={e => setFd({...fd, rating: +e.target.value})} />
             </div>
+          </div>
+          <div className="glass-card p-10 rounded-[56px] shadow-xl">
+            <label className="text-[10px] text-stone-600 uppercase font-black mb-4 block">Extraction Notes</label>
+            <textarea 
+              placeholder="Observation: Channelling, puck screen used, turbo shot, etc..." 
+              className="w-full bg-white/5 border border-white/5 rounded-[2rem] p-6 text-white outline-none focus:border-amber-500/30 transition-colors min-h-[100px] resize-none text-sm" 
+              value={fd.notes} 
+              onChange={e => setFd({ ...fd, notes: e.target.value })}
+            />
           </div>
           <div className="mt-auto pb-10">
             <button type="submit" className="btn-primary w-full py-8 rounded-[3.5rem] font-black uppercase text-black shadow-2xl text-[16px] tracking-widest active:scale-[0.98] transition-transform">Commit Extraction</button>
@@ -511,7 +555,21 @@ const App: React.FC = () => {
   );
 };
 
-// Mount
+// Implement emergencyReset utility
+window.emergencyReset = async () => {
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      await registration.unregister();
+    }
+    const cacheKeys = await caches.keys();
+    for (const key of cacheKeys) {
+      await caches.delete(key);
+    }
+  } catch (e) {}
+  window.location.reload();
+};
+
 const rootElement = document.getElementById('root');
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
