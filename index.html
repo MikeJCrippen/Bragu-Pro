@@ -11,6 +11,8 @@
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/924/924514.png">
     <title>Bragu Pro v0.5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Babel standalone is required to transform TSX in the browser for static hosting environments -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:wght@700;800&display=swap');
       
@@ -83,8 +85,8 @@
     "react-dom": "https://esm.sh/react-dom@19.2.4",
     "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
     "lucide-react": "https://esm.sh/lucide-react@0.474.0?bundle",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
@@ -93,17 +95,44 @@
     <div id="app-loader" class="fixed inset-0 flex items-center justify-center bg-[#050505] z-[9999]">
       <div class="text-center space-y-6">
         <div class="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p class="text-stone-500 text-[10px] font-black tracking-widest uppercase">Initializing Dial-In...</p>
+        <p id="loader-status" class="text-stone-500 text-[10px] font-black tracking-widest uppercase">Initializing Dial-In...</p>
       </div>
     </div>
     
     <div id="root"></div>
 
-    <script type="module" src="index.tsx"></script>
     <script type="module">
-      // Fail-safe reset utility
+      async function bootstrap() {
+        const loaderStatus = document.getElementById('loader-status');
+        try {
+          if (loaderStatus) loaderStatus.innerText = 'Loading Archive...';
+          const response = await fetch('./index.tsx');
+          if (!response.ok) throw new Error('Could not fetch index.tsx');
+          const code = await response.text();
+          
+          if (loaderStatus) loaderStatus.innerText = 'Compiling Telemetry...';
+          const transformed = Babel.transform(code, {
+            presets: [
+              ['react', { runtime: 'automatic' }],
+              ['typescript', { isTSX: true, allExtensions: true }]
+            ],
+            filename: 'index.tsx'
+          }).code;
+
+          if (loaderStatus) loaderStatus.innerText = 'Booting Lab...';
+          const blob = new Blob([transformed], { type: 'application/javascript' });
+          const blobUrl = URL.createObjectURL(blob);
+          await import(blobUrl);
+        } catch (err) {
+          console.error("Critical Boot Error:", err);
+          if (loaderStatus) loaderStatus.innerText = 'BOOT ERROR - TAP TO RESET';
+          document.body.onclick = () => window.emergencyReset();
+        }
+      }
+
+      // Reset utility to clear SW and cache
       window.emergencyReset = async () => {
-        if (confirm('Are you sure? This will clear all cached files and reload the app.')) {
+        if (confirm('Clear local cache and reboot system?')) {
           try {
             const registrations = await navigator.serviceWorker.getRegistrations();
             for (let r of registrations) await r.unregister();
@@ -114,12 +143,15 @@
         }
       };
 
-      // Service Worker registration
-      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+      // Service Worker registration for offline support
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
         navigator.serviceWorker.register('./sw.js').catch(err => {
-          console.warn('SW registration skipped:', err);
+          console.warn('Service Worker registration skipped:', err);
         });
       }
+
+      // Start the app boot sequence
+      bootstrap();
     </script>
   </body>
 </html>
