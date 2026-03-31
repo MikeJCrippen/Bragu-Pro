@@ -102,8 +102,14 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setBeans(parsed.beans || []);
-        setShots(parsed.shots || []);
+        if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.beans)) {
+            setBeans(parsed.beans);
+          }
+          if (Array.isArray(parsed.shots)) {
+            setShots(parsed.shots);
+          }
+        }
       } catch (e) { 
         console.error('Failed to parse local storage:', e); 
       }
@@ -199,12 +205,17 @@ const App: React.FC = () => {
   // --- Views ---
   const BeanList = () => {
     const sortedBeans = [...beans].sort((a, b) => {
-      if (sortOption === 'recent') return b.createdAt - a.createdAt;
-      if (sortOption === 'roaster') return a.roaster.localeCompare(b.roaster);
+      if (sortOption === 'recent') return (b.createdAt || 0) - (a.createdAt || 0);
+      if (sortOption === 'roaster') return (a.roaster || '').localeCompare(b.roaster || '');
       
       // Rating sort
-      const ratingA = shots.filter(s => s.beanId === a.id).reduce((acc, s) => acc + s.rating, 0) / (shots.filter(s => s.beanId === a.id).length || 1);
-      const ratingB = shots.filter(s => s.beanId === b.id).reduce((acc, s) => acc + s.rating, 0) / (shots.filter(s => s.beanId === b.id).length || 1);
+      const getRating = (beanId: string) => {
+        const bShots = shots.filter(s => s && s.beanId === beanId);
+        if (bShots.length === 0) return 0;
+        return bShots.reduce((acc, s) => acc + (s.rating || 0), 0) / bShots.length;
+      };
+      const ratingA = getRating(a.id);
+      const ratingB = getRating(b.id);
       return ratingB - ratingA;
     });
 
