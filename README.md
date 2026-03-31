@@ -4,8 +4,8 @@
 A professional-grade, standalone PWA for logging your espresso journey. Your data stays in your pocket, powered by your browser's local storage.
 
 ## 🚀 Quick Start
-1. **Sync to GitHub**: Push your code to a repository.
-2. **Enable Pages**: In Settings > Pages, deploy from the `main` branch.
+1. **Sync to GitHub**: Push your code to the `main` branch.
+2. **Enable Pages**: In **Settings > Pages**, under **Build and deployment > Source**, select **GitHub Actions**.
 3. **Install**: Open the URL on your phone and "Add to Home Screen".
 
 ## 💾 Data Vault
