@@ -92,7 +92,7 @@ const App: React.FC = () => {
   const [beans, setBeans] = useState<Bean[]>([]);
   const [shots, setShots] = useState<Shot[]>([]);
   const [view, setView] = useState<ViewState>({ type: 'bean-list' });
-  const [sortOption, setSortOption] = useState<'rating' | 'recent'>('rating');
+  const [sortOption, setSortOption] = useState<'rating' | 'recent' | 'roaster'>('recent');
   const [showSettings, setShowSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -197,20 +197,53 @@ const App: React.FC = () => {
   };
 
   // --- Views ---
-  const BeanList = () => (
-    <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
-      <header className="flex justify-between items-center mb-12 mt-4 px-2">
-        <div className="flex-1 min-w-0 pr-6">
-          <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Bragu Pro v0.5.2</span>
-          <h1 className="text-4xl font-display text-white mt-1 leading-tight truncate">Archive</h1>
-        </div>
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <button onClick={() => setShowSettings(true)} className="w-14 h-14 rounded-full flex items-center justify-center text-stone-500 glass-card border-white/5 transition-transform active:scale-90"><Database size={22} /></button>
-          <button onClick={() => setView({ type: 'add-bean' })} className="btn-primary w-14 h-14 rounded-full flex items-center justify-center text-black shadow-amber-500/20 shadow-2xl transition-transform active:scale-90"><Plus size={26} strokeWidth={3} /></button>
-        </div>
-      </header>
+  const BeanList = () => {
+    const sortedBeans = [...beans].sort((a, b) => {
+      if (sortOption === 'recent') return b.createdAt - a.createdAt;
+      if (sortOption === 'roaster') return a.roaster.localeCompare(b.roaster);
+      
+      // Rating sort
+      const ratingA = shots.filter(s => s.beanId === a.id).reduce((acc, s) => acc + s.rating, 0) / (shots.filter(s => s.beanId === a.id).length || 1);
+      const ratingB = shots.filter(s => s.beanId === b.id).reduce((acc, s) => acc + s.rating, 0) / (shots.filter(s => s.beanId === b.id).length || 1);
+      return ratingB - ratingA;
+    });
 
-      {beans.length === 0 ? (
+    return (
+      <div className="max-w-xl mx-auto px-6 pt-safe pb-safe min-h-[100dvh] flex flex-col fade-in">
+        <header className="flex justify-between items-center mb-10 mt-4 px-2">
+          <div className="flex-1 min-w-0 pr-6">
+            <span className="text-[10px] font-black tracking-[0.4em] text-amber-500/60 uppercase">Bragu Pro v0.5.3</span>
+            <h1 className="text-4xl font-display text-white mt-1 leading-tight truncate">Archive</h1>
+          </div>
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <button onClick={() => setShowSettings(true)} className="w-14 h-14 rounded-full flex items-center justify-center text-stone-500 glass-card border-white/5 transition-transform active:scale-90"><Database size={22} /></button>
+            <button onClick={() => setView({ type: 'add-bean' })} className="btn-primary w-14 h-14 rounded-full flex items-center justify-center text-black shadow-amber-500/20 shadow-2xl transition-transform active:scale-90"><Plus size={26} strokeWidth={3} /></button>
+          </div>
+        </header>
+
+        {beans.length > 0 && (
+          <div className="flex gap-2 mb-8 px-2 overflow-x-auto no-scrollbar pb-2">
+            {[
+              { id: 'recent', label: 'Most Recent' },
+              { id: 'rating', label: 'Top Rated' },
+              { id: 'roaster', label: 'A-Z Roaster' }
+            ].map(opt => (
+              <button
+                key={opt.id}
+                onClick={() => setSortOption(opt.id as 'rating' | 'recent' | 'roaster')}
+                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                  sortOption === opt.id 
+                    ? 'bg-amber-500 text-black' 
+                    : 'bg-white/5 text-stone-500 border border-white/5'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {beans.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-20 px-4">
           <div className="w-24 h-24 bg-white/5 rounded-[40px] flex items-center justify-center mb-8 border border-white/5 shadow-inner">
             <Coffee className="text-amber-500 w-12 h-12 opacity-50" />
@@ -221,7 +254,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-6 pb-32">
-          {beans.map(bean => {
+          {sortedBeans.map(bean => {
             const bShots = shots.filter(s => s.beanId === bean.id);
             const avgRating = bShots.length > 0 ? (bShots.reduce((a, s) => a + s.rating, 0) / bShots.length).toFixed(1) : null;
             return (
@@ -255,7 +288,7 @@ const App: React.FC = () => {
             <div className="text-center pt-4">
                 <Database size={48} className="text-amber-500 mx-auto mb-6" />
                 <h3 className="text-3xl font-display text-white mb-1">Data Vault</h3>
-                <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">v0.5.2 Local Archive</p>
+                <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">v0.5.3 Local Archive</p>
             </div>
             <div className="space-y-4 pt-4">
               <button onClick={exportData} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Export Backup</span><Download className="text-stone-500" /></button>
@@ -268,6 +301,7 @@ const App: React.FC = () => {
       )}
     </div>
   );
+};
 
   const BeanForm = ({ beanId }: { beanId?: string }) => {
     const existing = beanId ? beans.find(b => b.id === beanId) : null;
