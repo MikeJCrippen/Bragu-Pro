@@ -20,9 +20,10 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     },
+    "include": ["src"],
     "allowImportingTsExtensions": true,
     "noEmit": true
   }

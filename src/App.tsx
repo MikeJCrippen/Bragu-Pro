@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
 import { 
   Coffee, Plus, ChevronLeft, Star, ArrowUpDown, Trash2, 
   ChevronRight, Database, X, Zap, Download, Upload, Edit3, Camera, CheckCircle
@@ -47,7 +46,9 @@ const generateUUID = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     try {
       return crypto.randomUUID();
-    } catch (e) {}
+    } catch {
+      // Fallback to manual UUID generation
+    }
   }
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0;
@@ -188,7 +189,9 @@ const App: React.FC = () => {
             setShowSettings(false);
           }
         }
-      } catch (err) { alert("Invalid backup file."); }
+      } catch {
+        alert("Invalid backup file.");
+      }
     };
     reader.readAsText(file);
   };
@@ -258,7 +261,7 @@ const App: React.FC = () => {
               <button onClick={exportData} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Export Backup</span><Download className="text-stone-500" /></button>
               <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center justify-between p-7 bg-white/5 rounded-[2.5rem] border border-white/5 hover:bg-white/10 transition-colors"><span className="text-white font-bold">Restore Backup</span><Upload className="text-stone-500" /></button>
               <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".json" />
-              <button onClick={() => (window as any).emergencyReset()} className="w-full py-4 text-stone-600 text-[10px] font-black uppercase tracking-widest hover:text-red-500 transition-colors">Emergency System Reset</button>
+              <button onClick={() => (window as unknown as { emergencyReset: () => void }).emergencyReset()} className="w-full py-4 text-stone-600 text-[10px] font-black uppercase tracking-widest hover:text-red-500 transition-colors">Emergency System Reset</button>
             </div>
           </div>
         </div>
@@ -284,7 +287,9 @@ const App: React.FC = () => {
         try {
           const compressed = await compressImage(file);
           setFormData({ ...formData, image: compressed });
-        } catch (err) { alert("Error processing image."); }
+        } catch {
+          alert("Error processing image.");
+        }
       }
     };
 
@@ -296,7 +301,7 @@ const App: React.FC = () => {
           <div className="w-14" />
         </header>
 
-        <form onSubmit={e => { e.preventDefault(); existing ? updateBean(existing.id, formData) : addBean(formData); }} className="space-y-10 flex-1 flex flex-col pb-12">
+        <form onSubmit={e => { e.preventDefault(); if (existing) { updateBean(existing.id, formData); } else { addBean(formData); } }} className="space-y-10 flex-1 flex flex-col pb-12">
           <div className="flex justify-center mb-4">
             <button type="button" onClick={() => photoInputRef.current?.click()} className="relative w-32 h-32 rounded-[2.5rem] overflow-hidden glass-card border-white/10 flex items-center justify-center transition-transform active:scale-95 group">
               {formData.image ? (
@@ -580,9 +585,4 @@ const App: React.FC = () => {
   );
 };
 
-// --- Mount App ---
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(<React.StrictMode><App /></React.StrictMode>);
-}
+export default App;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="background-color: #050505 !important;">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -7,127 +7,21 @@
     <meta name="color-scheme" content="dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/924/924514.png">
     <title>Bragu Pro v0.5.2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Babel standalone is required to transform TSX in the browser for static hosting environments -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:wght@700;800&display=swap');
-      
-      :root {
-        --bg-color: #050505;
-      }
-
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: var(--bg-color) !important;
-        color: #F9FAFB;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        overscroll-behavior: none;
-        overflow: hidden;
-      }
-
-      #root {
-        height: 100dvh;
-        width: 100vw;
-        overflow-y: auto;
-        overflow-x: hidden;
-        display: flex;
-        flex-direction: column;
-        background-color: var(--bg-color);
-      }
-
-      .font-display { font-family: 'Bricolage Grotesque', sans-serif; }
-      
-      .glass-card {
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .btn-primary {
-        background: #f59e0b;
-        color: #000;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.4);
-      }
-
-      .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      
-      input[type=range]::-webkit-slider-thumb {
-        height: 24px;
-        width: 24px;
-        border-radius: 50%;
-        background: #f59e0b;
-        cursor: pointer;
-        -webkit-appearance: none;
-        margin-top: -8px;
-        box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
-      }
-
-      .pt-safe { padding-top: env(safe-area-inset-top); }
-      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-      .px-safe { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
-
-      /* Hide loader when app is ready */
-      body.ready #app-loader { display: none; }
-    </style>
-    <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.2.4",
-    "react-dom": "https://esm.sh/react-dom@19.2.4",
-    "react-dom/client": "https://esm.sh/react-dom@19.2.4/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.474.0?bundle",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/"
-  }
-}
-</script>
   </head>
-  <body class="bg-[#050505]">
-    <div id="app-loader" class="fixed inset-0 flex items-center justify-center bg-[#050505] z-[9999]">
-      <div class="text-center space-y-6">
-        <div class="w-12 h-12 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p id="loader-status" class="text-stone-500 text-[10px] font-black tracking-widest uppercase">Initializing Dial-In...</p>
-      </div>
-    </div>
-    
+  <body>
     <div id="root"></div>
-
-    <script type="module">
-      async function bootstrap() {
-        const loaderStatus = document.getElementById('loader-status');
-        try {
-          if (loaderStatus) loaderStatus.innerText = 'Loading Archive...';
-          const response = await fetch('./index.tsx');
-          if (!response.ok) throw new Error('Could not fetch index.tsx');
-          const code = await response.text();
-          
-          if (loaderStatus) loaderStatus.innerText = 'Compiling Telemetry...';
-          const transformed = Babel.transform(code, {
-            presets: [
-              ['react', { runtime: 'automatic' }],
-              ['typescript', { isTSX: true, allExtensions: true }]
-            ],
-            filename: 'index.tsx'
-          }).code;
-
-          if (loaderStatus) loaderStatus.innerText = 'Booting Lab...';
-          const blob = new Blob([transformed], { type: 'application/javascript' });
-          const blobUrl = URL.createObjectURL(blob);
-          await import(blobUrl);
-        } catch (err) {
-          console.error("Critical Boot Error:", err);
-          if (loaderStatus) loaderStatus.innerText = 'BOOT ERROR - TAP TO RESET';
-          document.body.onclick = () => window.emergencyReset();
-        }
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Service Worker registration for offline support
+      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.warn('Service Worker registration skipped:', err);
+          });
+        });
       }
 
       // Reset utility to clear SW and cache
@@ -142,16 +36,6 @@
           window.location.reload(true);
         }
       };
-
-      // Service Worker registration for offline support
-      if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
-        navigator.serviceWorker.register('./sw.js').catch(err => {
-          console.warn('Service Worker registration skipped:', err);
-        });
-      }
-
-      // Start the app boot sequence
-      bootstrap();
     </script>
   </body>
 </html>
