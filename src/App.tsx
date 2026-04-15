@@ -464,10 +464,11 @@ const App: React.FC = () => {
             <h3 className="text-[11px] font-black text-white/50 uppercase tracking-[0.3em] mb-8 text-center">Optimal Logic</h3>
             {bestShot ? (
               <div className="space-y-8">
-                <div className="grid grid-cols-3 gap-6 text-center relative z-10">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-10 text-center relative z-10">
                   <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2 tracking-tighter">Dose</p><p className="text-4xl font-display text-white">{bestShot.dose}<span className="text-xs ml-0.5 opacity-40 font-sans">g</span></p></div>
                   <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2 tracking-tighter">Yield</p><p className="text-4xl font-display text-white">{bestShot.yield}<span className="text-xs ml-0.5 opacity-40 font-sans">g</span></p></div>
                   <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2 tracking-tighter">Time</p><p className="text-4xl font-display text-white">{bestShot.time}<span className="text-xs ml-0.5 opacity-40 font-sans">s</span></p></div>
+                  <div><p className="text-[9px] text-stone-600 uppercase font-black mb-2 tracking-tighter">Grind</p><p className="text-4xl font-display text-amber-500">{bestShot.grindSetting}</p></div>
                 </div>
                 {bestShot.notes && (
                   <div className="pt-8 border-t border-white/5">
